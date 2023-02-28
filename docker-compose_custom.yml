@@ -59,18 +59,13 @@ services:
     environment:
       LOGGING_LEVEL: info
       AMQP_URL: amqp://rabbitmq:rabbitmq@rabbitmq:5672
-      AMQP_EXCHANGE_NAME: analyzer-default
-      AMQP_VIRTUAL_HOST: analyzer
       ES_HOSTS: http://elastic:elastic1q2w3e@elasticsearch:9200
       MINIO_SHORT_HOST: ${SHORT_BUCKET_HOST}
       ANALYZER_BINARYSTORE_MINIO_REGION: ${AWS_REGION} 
       MINIO_ACCESS_KEY: ${BUCKET_ACCESS_KEY}
       MINIO_SECRET_KEY: ${BUCKET_SECRET_KEY}
     depends_on:
-      elasticsearch:
-        condition: service_started
-      rabbitmq:
-        condition: service_healthy
+      - elasticsearch
     restart: always
 
   analyzer_train: #an analyzer instance for training, don't forget to setup the same storage(either minio, or filesystem) as for main analyzer
@@ -78,8 +73,6 @@ services:
     environment:
       LOGGING_LEVEL: info
       AMQP_URL: amqp://rabbitmq:rabbitmq@rabbitmq:5672
-      AMQP_EXCHANGE_NAME: analyzer-default
-      AMQP_VIRTUAL_HOST: analyzer
       ES_HOSTS: http://elastic:elastic1q2w3e@elasticsearch:9200
       MINIO_SHORT_HOST: ${SHORT_BUCKET_HOST}
       MINIO_ACCESS_KEY: ${BUCKET_ACCESS_KEY}
@@ -87,11 +80,8 @@ services:
       INSTANCE_TASK_TYPE: train
       UWSGI_WORKERS: 1
     depends_on:
-      elasticsearch:
-        condition: service_started
-      rabbitmq:
-        condition: service_healthy
-    restart: always
+      - elasticsearch
+    restart: always 
 
   metrics-gatherer: # metrics service for analyzing how analyzer is working and manage retrained models
     image: reportportal/service-metrics-gatherer:5.7.3
@@ -109,7 +99,6 @@ services:
       ALLOWED_END_TIME: "08:00"
       #TZ: Europe/Minsk you can change a timezone like this to specify when metrics are gathered
       AMQP_URL: amqp://rabbitmq:rabbitmq@rabbitmq:5672
-      AMQP_VIRTUAL_HOST: analyzer
     depends_on:
       - elasticsearch
     restart: always       
@@ -190,7 +179,6 @@ services:
       - RP_AMQP_PASS=rabbitmq
       - RP_AMQP_APIUSER=rabbitmq
       - RP_AMQP_APIPASS=rabbitmq
-      - RP_AMQP_ANALYZER-VHOST=analyzer
       - RP_BINARYSTORE_TYPE=minio
       - RP_BINARYSTORE_MINIO_ENDPOINT=${BUCKET_URL}
       - RP_BINARYSTORE_MINIO_REGION=${AWS_REGION}
